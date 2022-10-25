@@ -1,0 +1,434 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <style type="text/css">
+      body {
+        height: 1000px;
+        width: 1500px;
+        font-family: 'Gill Sans', 'Gill Sans MT', Calibri, 'Trebuchet MS', sans-serif;
+        font-weight: bold;
+	      font-style: italic;
+        font-size: 2vw;
+        text-align: center;
+        margin:auto;
+        display:block;
+        background-color:lightyellow;
+      }
+      #containerCuis {
+        height: 800px;
+        width: 500px;
+        max-width:850px;
+        margin:0 auto;
+        padding: 20px;
+        text-align: center;
+      }
+      #gridCuis {
+        position: absolute;
+        top: 200px;
+        padding: 0;
+        margin: 0;
+      }
+      #gridCuis > li {
+        border: 2px solid #c70606;
+        display: inline-block;
+        width:  300px;
+        margin: 10px;
+        background-color: #ffffff;
+      }
+      #cuisine{
+        position:absolute;
+        top: 100px;
+        left: 600px;
+        margin-left: auto;
+        text-align:center;
+        font-size:40px;
+        -webkit-transition:0.3s;
+        transition:0.3s;
+        height:60px;
+        width:400px;
+        border-color: rgb(0, 0, 0);
+
+        -moz-border-radius: 8px;
+        -webkit-border-radius: 8px;
+        border-radius: 8px;
+
+      }
+      #ok{
+        position:absolute;
+        top: 105px;
+        left: 1100px;
+        text-align:center;
+        font-size:40px;
+        -webkit-transition:0.3s;
+        transition:0.3s;
+        height:60px;
+        width:150px;
+        color:rgb(255, 0, 0);
+        background-color:lightyellow;
+        border-color: rgb(255, 0, 0);
+
+        -moz-border-radius: 30px;
+        -webkit-border-radius: 30px;
+        border-radius: 30px;
+        
+        cursor:pointer; 
+      }
+      #ok:hover {
+          transform:scale(1.15); 
+      }
+      #Bmenu{
+        position:absolute;
+        text-align:center;
+        top: 10px;
+        left: 5px;
+        height:60px;
+        width:130px;
+        font-size:40px;
+        -webkit-transition:0.3s;
+        transition:0.3s;
+        color:rgb(255, 0, 0);
+        background-color:lightyellow;
+        border-color: rgb(255, 0, 0);
+        cursor:pointer;
+
+        -moz-border-radius: 30px;
+        -webkit-border-radius: 30px;
+        border-radius: 30px;
+      }
+      #Bmenu:hover {
+          transform:scale(1.15); 
+      }
+      #back{
+        position:absolute;
+        left: 350px;
+        top:10px;
+        text-align:center;
+        font-size:40px;
+        -webkit-transition:0.3s;
+        transition:0.3s;
+        height:60px;
+        width:120px;
+        color:rgb(255, 0, 0);
+        background-color:lightyellow;
+        border-color: rgb(255, 0, 0);
+
+        -moz-border-radius: 30px;
+        -webkit-border-radius: 30px;
+        border-radius: 30px;
+        
+        cursor:pointer; 
+      }
+      #back:hover {
+          transform:scale(1.15); 
+          
+      }
+      #sc{
+        position: absolute;
+        top: 250px;
+        left: 5px;
+        height:60px;
+        width:270px;
+        text-align:center;
+        font-size:40px;
+        -webkit-transition:0.3s;
+        transition:0.3s;
+        color:rgb(255, 0, 0);
+        background-color:lightyellow;
+        border-color: rgb(255, 0, 0);
+
+        -moz-border-radius: 30px;
+        -webkit-border-radius: 30px;
+        border-radius: 30px;
+        
+        cursor:pointer;
+      }
+      #sc:hover{
+        transform:scale(1.15);
+      }
+      textarea{
+          resize:none;
+          display: block;
+          justify-content: center;
+          margin-left:auto;
+          margin-right:auto;
+      }
+
+      /*VOTAZIONE*/
+      .Stars{
+        position: absolute;
+        display: flex;
+        justify-content: center;
+      }
+      .Stars li{
+        margin-left: 5px;
+        margin-right: 5px;
+      }
+      .stars {
+        height: 134px;
+        width: 126px;
+        list-style-type: none;
+      }
+
+    </style>
+
+    <script type="text/javascript" language="javascript">
+
+      var ws = new WebSocket("ws://localhost:3000/ws");
+        ws.onmessage = function (event) {
+          obj = JSON.parse(event.data);
+          switch (obj.type) {
+              case 'utils':
+                switch (obj.value) {
+                  case 'menu':
+                    window.open('http://localhost:8000/webpagepepper.html','_self');
+                    break;
+                  case 'change world cuisine':
+                    window.open('http://localhost:8000/worldcuisine.html','_self');
+                    break;
+                  case 'back':
+                    receipeWorldChoice()
+                    break;
+                }
+                break;
+              case 'world cuisine':
+                /*ws.close(1000);*/
+                document.getElementById("cuisine").value = obj.value;
+                receipeWorldChoice();
+                break;
+              case 'recipe':
+                visualizeReceipeCuis(obj.value)
+                break;
+              case 'vote':
+                if (obj.value == "") {
+                  resetTextArea()
+                }
+                else {
+                  star_vota(parseInt(obj.value))
+                }
+                break;
+              case 'stop cooking':
+                window.open('http://localhost:8000/screensaver.html','_self');
+                break;
+          }
+        };
+
+      idCuis = new Array(0);
+      currentCuis = "";
+
+      cuisines = []
+      dicCuis = {}
+      dicGrad = {}
+      dicRecipes = {}
+      
+      Promise.all([fetch(String("CuisRecipes") + '.txt')
+          .then(x => x.text())])
+          .then( ([sampleResp]) => {
+              avaiableCuis = sampleResp.replaceAll("\r","");
+              avaiableCuis = avaiableCuis.replaceAll("\n","").split("%");
+              for (i=0; i<avaiableCuis.length-1; i++) {
+                  data = avaiableCuis[i].split("$");
+                  cuis = data[0];
+                  recipes = data[1].split("/");
+                  list = new Array(0)
+                  for(j=0; j<recipes.length;j++) {
+                      data1 = recipes[j].split("@");
+                      n_v = data1[0].split(" ");
+                      list.push(n_v[0]);
+                      dicGrad[n_v[0]] = n_v[1];
+                      dicRecipes[n_v[0]] = data1[1];
+                  }   
+                  dicCuis[cuis] = list;
+              }
+              cuisines = Object.keys(dicCuis);         
+          } );
+
+      function on(idCuis) {
+        for(i=1; i<=idCuis; i++)
+          document.getElementById('star_'+String(i)+'_img').src = "./star-on.png";
+      }
+
+      function off(idCuis) {
+        for(i=1; i<=idCuis; i++)
+          document.getElementById('star_'+String(i)+'_img').src = "./star-off.png";
+      }
+
+      function star_vota(QT) {
+        var star_output = '<p>You voted ' + QT + ' stars! </p>';
+        document.getElementById('STAR_RATING').innerHTML = star_output;
+        dicGrad[idCuis[0]] = QT;
+      }
+
+      function star(){
+        sd = ('<div id="STAR_RATING" class="Stars" >');
+          s1 = '<li class="stars" id="star_1" onclick="sendToPepper(1)" onmouseover="on(1)" onmouseout="off(1)"><img id="star_1_img" src="./star-off.png"/></li>';
+        s2 = '<li class="stars" id="star_2" onclick="sendToPepper(2)" onmouseover="on(2)" onmouseout="off(2)"><img id="star_2_img" src="./star-off.png"/></li>';
+        s3 = '<li class="stars" id="star_3" onclick="sendToPepper(3)" onmouseover="on(3)" onmouseout="off(3)"><img id="star_3_img" src="./star-off.png"/></li>';
+        s4 = '<li class="stars" id="star_4" onclick="sendToPepper(4)" onmouseover="on(4)" onmouseout="off(4)"><img id="star_4_img" src="./star-off.png"/></li>';
+        s5 = '<li class="stars" id="star_5" onclick="sendToPepper(5)" onmouseover="on(5)" onmouseout="off(5)"><img id="star_5_img" src="./star-off.png"/></li>';
+        ed = '</div>';
+        div = document.createElement("div")
+        div.idCuis = "review"
+        div.style.width = "400px";
+        div.style.height = "100px";
+        div.style.top = "600px";
+        div.style.left = "650px";
+        div.style.position = "absolute";
+        div.innerHTML = sd+s1+s2+s3+s4+s5+ed;
+        document.getElementById('containerCuis').appendChild(div);
+      }
+
+      function reset(){
+
+        idlenCuis=idCuis.length;
+        review = document.getElementById("review");
+        indexAreaCuis = document.getElementById(idCuis[0]+"textarea");
+        bottonBack = document.getElementById("back");
+
+        if(review!=null){ review.remove(); }
+        if(indexAreaCuis!=null){ indexAreaCuis.remove(); }
+        if(bottonBack!=null){ bottonBack.remove(); }
+
+        for(i=0; i<idlenCuis; i++){
+          indexCuis = document.getElementById(idCuis[0]+"nodeCuis");
+          indexCuis.remove();
+          idCuis.shift();
+        }
+      }
+
+      function resetTextArea(){
+        indexAreaCuis = document.getElementById(idCuis[0]+"textarea");
+        back = document.getElementById('back');
+        menu = document.getElementById('Bmenu');
+        change = document.getElementById('ok');
+        if(indexAreaCuis!=null){ indexAreaCuis.remove(); }
+        if(back!=null){ back.remove(); }
+        if(menu!=null){ menu.remove(); }
+        if(change!=null){ change.remove(); }
+        star()
+      }
+
+      function visualizeReceipeCuis(name){
+
+        reset();
+
+        var backBtn = document.createElement("button");
+        backBtn.id = "back";
+        backBtn.innerText = "Back";
+        backBtn.addEventListener('click', function() { sendToPepper('back'); } );
+
+        var nodeCuis = document.createElement("LI");
+        var parCuis = document.createElement("P");
+        var imgReceipeCuis = document.createElement("textarea");
+        
+        imgReceipeCuis.style.position = "absolute";
+        imgReceipeCuis.style.top = "600px";
+        imgReceipeCuis.style.left = "550px";
+        imgReceipeCuis.style.width = "800px";
+        imgReceipeCuis.style.height = "300px";
+        imgReceipeCuis.readOnly = true;
+        parCuis.innerText = String(name);
+        nodeCuis.id = String(name)+"nodeCuis";
+        imgReceipeCuis.id = String(name) + "textarea";
+        var imgCuis = document.createElement("img");
+        imgCuis.src =  String(name) + ".jpg";
+        imgCuis.id = String(name);
+        imgCuis.style.width = "300px";
+        imgCuis.style.height = "200px";
+        idCuis.push(imgCuis.id);
+        imgReceipeCuis.innerText = dicRecipes[idCuis[0]]
+        nodeCuis.appendChild(parCuis);
+        nodeCuis.appendChild(imgCuis);
+        document.getElementById("containerCuis").appendChild(imgReceipeCuis);
+        document.getElementById("gridCuis").appendChild(backBtn);
+        document.getElementById("gridCuis").appendChild(nodeCuis);
+      }
+
+      function receipeWorldChoice(){
+
+        if (document.getElementById("back")!=null){ v=currentCuis; }
+        else{ v=document.getElementById("cuisine").value.toLowerCase(); }
+        
+        reset();
+       
+        if(v==""){
+          //alert("Insert the cuisine from the world you desired");
+          return false;
+        }
+        else if(cuisines.includes(v)){
+
+          var search = document.getElementById('ok');
+          search.style.width = "420px";
+          search.innerText = 'Change World Cuisine';
+          search.onclick = function() { sendToPepper('change world cuisine'); };
+
+          currentCuis=v;
+          l1=dicCuis[v].length;          
+          recCuis = new Array(l1);
+
+          for (i=0; i<l1; i++){
+            recCuis[i]=[dicCuis[v][i], dicGrad[dicCuis[v][i]] ];
+          }
+
+          recCuis.sort(function(first, second) {
+            return second[1] - first[1];
+          });
+
+          for (i=0; i<l1; i++){
+
+            var nodeCuis = document.createElement("LI");
+            var parCuis = document.createElement("P");
+            parCuis.innerText = String(recCuis[i][0]) + ": " + String(recCuis[i][1]);
+            nodeCuis.id = String(recCuis[i][0])+"nodeCuis";
+            var imgCuis = document.createElement("img");
+            imgCuis.src =  String(recCuis[i][0]) + ".jpg";
+            imgCuis.id = String(recCuis[i][0]);
+            imgCuis.style.width = "300px";
+            imgCuis.style.height = "200px";
+            const p = {
+              s: imgCuis.id,
+              fnct: function() {
+                ws.send('{ "type": "'+String(this.s)+'" , "value": "" }');
+              }
+            };
+            imgCuis.addEventListener('click', p.fnct.bind(p));
+            idCuis.push(imgCuis.id);
+            nodeCuis.appendChild(parCuis);
+            nodeCuis.appendChild(imgCuis);
+            document.getElementById("gridCuis").appendChild(nodeCuis);
+          } 
+        }
+        else{
+          //alert("The world cuisine is not available");
+          return false;
+        }
+      }
+
+      function findCuis() {
+          cui = document.getElementById('cuisine').value.toLowerCase();
+          sendToPepper(cui)
+      }
+
+      function sendToPepper(s) {
+          ws.send('{ "type": "'+String(s)+'" , "value": "" }')
+        }
+      
+    </script>
+  </head>
+  <body>
+
+    <div style="position: absolute; height: 200px; width: 1500px;"> 
+
+      <button id="Bmenu" onclick="sendToPepper('menu')"> Menu </button>
+      <p style="position: absolute; left: 340px; top: 100px; color: red; margin: auto;">World cuisine:</p>
+      <input id="cuisine" type="text" name="cuisine"> 
+      <button id="ok" onclick="findCuis()"> Search </button>
+      <button id="sc" onclick="sendToPepper('stop cooking')"> Stop Cooking </button>
+    </div>
+
+    <div id="containerCuis" class="justified">
+      <ul id="gridCuis">
+      </ul>
+    </div>
+    
+  </body>
+</html>

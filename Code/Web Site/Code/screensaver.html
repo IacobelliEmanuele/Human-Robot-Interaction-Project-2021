@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>ScreenSaver</title>
+    <style type="text/css">
+       body {
+        margin: auto; 
+        width: 1920px;
+        height: 1080px;    
+        background-color: rgb(6, 6, 41);   
+      }
+    </style>
+    <script>
+      var ws = new WebSocket("ws://localhost:3000/ws");
+      ws.onmessage = function (event) {
+          obj = JSON.parse(event.data);
+          switch (obj.type) {
+              case "let's cook":
+                ws.close(1000)
+                window.open('http://localhost:8000/webpagepepper.html','_self')
+                break;
+          }
+      };
+
+      function sendToPepper(s) {
+        ws.send('{ "type": "'+String(s)+'" , "value": "" }')
+      }
+
+    </script>
+  </head>
+  <body> 
+    <video height="100%" width="100%" autoplay="autoplay" loop onclick="sendToPepper('let\'s cook')">
+      <source src="video.mp4" type="video/mp4">
+    </video>
+  </body>
+</html>
+

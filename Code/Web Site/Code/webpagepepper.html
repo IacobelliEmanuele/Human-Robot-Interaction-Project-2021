@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Choose a Receipe</title>
+    <style type="text/css">
+       body {
+        font-family:'Gill Sans', 'Gill Sans MT', Calibri, 'Trebuchet MS', sans-serif;
+        font-weight: bold;
+	      font-style: italic;
+        font-size: 2.5vw;
+        margin-left: 5vw;
+        margin-right: 5vw;
+        margin-top: 5vh;
+        margin-bottom: 5vh;
+        background-color:lightyellow;
+        
+      }
+      .circolare {
+        width: 30vw; 
+        height: 40vh;
+        border-radius:999em;    
+      -moz-border-radius:999em;  
+      -webkit-border-radius:999em; 
+        -o-border-radius: 999em;   
+      }
+
+      #exit{
+        font-size:40px;
+        -webkit-transition:0.3s;
+        transition:0.3s;
+        color:rgb(255, 0, 0);
+        background-color:lightyellow;
+        border-color: rgb(255, 0, 0);
+        cursor:pointer; 
+        -moz-border-radius: 30px;
+        -webkit-border-radius: 30px;
+        border-radius: 30px;
+      }
+      #exit:hover {
+          transform:scale(1.15);
+      }
+      </style>
+
+      <script>
+        
+        var ws = new WebSocket("ws://localhost:3000/ws");
+        ws.onmessage = function (event) {
+            obj = JSON.parse(event.data);
+            switch (obj.type) {
+                case "stop cooking":
+                    ws.close(1000);
+                    window.open('http://localhost:8000/screensaver.html','_self');
+                    break;
+                case "ingredient":
+                    ws.close(1000);
+                    window.open('http://localhost:8000/ingredient.html','_self');
+                    break;
+                case "world cuisine":
+                    ws.close(1000);
+                    window.open('http://localhost:8000/worldcuisine.html','_self');
+            }
+        };
+
+        function sendToPepper(s) {
+          ws.send('{ "type": "'+String(s)+'" , "value": "" }')
+        }
+
+      </script>
+
+  </head>
+
+  <body> 
+
+    <button id="exit" onclick="sendToPepper('stop cooking')"> Stop Cooking </button>
+
+    <div><h1 align="center" style="color: red; font: size 10vh;" >Let's cook ...</h1></div>
+    <div id=col1 >
+    <div align="center" style="float: left; left: 50%; top: 60%; width: 35%; height:100%">
+    <h2>Choose an ingredient</h2>
+    <img align="center" class="circolare" src=".\ingredienti-antiaging-per-cucina-sana.jpg.webp" onclick="sendToPepper('ingredient')"/>
+    </div>
+
+    <div id=col2>
+    <div align="center" style="float: right; right: 50%; top: 60%; width: 35%; height:100%">
+    <h2>Choose a world cuisine</h2>
+    <img align= "center" class="circolare" src=".\corso-05.jpg" onclick="sendToPepper('world cuisine')"/>
+    </div>
+    <div style="float: right; width: 47%;">
+      
+    
+  </body>
+</html>
+

@@ -1,0 +1,434 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <style type="text/css">
+      body {
+        height: 1000px;
+        width: 1500px;
+        font-family:'Gill Sans', 'Gill Sans MT', Calibri, 'Trebuchet MS', sans-serif;
+        font-weight: bold;
+	      font-style: italic;
+        font-size: 2vw;
+        text-align: center;
+        margin: auto;
+        display:block;
+        background-color:lightyellow;
+      }
+      #container {
+        height: 800px;
+        width: 500px;
+        max-width:850px;
+        margin:0 auto;
+        padding: 20px;
+        text-align: center;
+      }
+      #grid {
+        position: absolute;
+        top: 200px;
+        padding: 0;
+        margin: 0;
+      }
+      #grid > li {
+        border: 2px solid #c70606;
+        display: inline-block;
+        width:  300px;
+        margin: 10px;
+        background-color: #ffffff;
+      }
+      #ingredient{
+        position:absolute;
+        top: 100px;
+        left: 600px;
+        margin-left: auto;
+        text-align:center;
+        font-size:40px;
+        -webkit-transition:0.3s;
+        transition:0.3s;
+        height:60px;
+        width:400px;
+        border-color: rgb(0, 0, 0);
+
+        -moz-border-radius: 8px;
+        -webkit-border-radius: 8px;
+        border-radius: 8px;
+
+      }
+      #ok{
+        position: absolute;
+        top: 105px;
+        left: 1100px;
+        text-align:center;
+        font-size:40px;
+        -webkit-transition:0.3s;
+        transition:0.3s;
+        height:60px;
+        width:150px;
+        color:rgb(255, 0, 0);
+        background-color: lightyellow;
+        border-color: rgb(255, 0, 0);
+
+        -moz-border-radius: 30px;
+        -webkit-border-radius: 30px;
+        border-radius: 30px;
+ 
+        cursor:pointer; 
+      }
+      #ok:hover {
+          transform:scale(1.15);    
+      }
+      #Bmenu{
+        position:absolute;
+        text-align:center;
+        top: 10px;
+        left: 5px;
+        height:60px;
+        width:130px;
+        font-size:40px;
+        -webkit-transition:0.3s;
+        transition:0.3s;
+        color:rgb(255, 0, 0);
+        background-color:lightyellow;
+        border-color: rgb(255, 0, 0);
+        cursor:pointer; 
+
+        -moz-border-radius: 30px;
+        -webkit-border-radius: 30px;
+        border-radius: 30px;
+      }
+      #Bmenu:hover {
+          transform:scale(1.15); 
+      }
+      #back{
+        position: absolute;
+        left: 350px;
+        top: 10px;
+        text-align:center;
+        font-size:40px;
+        -webkit-transition:0.3s;
+        transition:0.3s;
+        height:60px;
+        width:120px;
+        color:rgb(255, 0, 0);
+        background-color:lightyellow;
+        border-color: rgb(255, 0, 0);
+
+        -moz-border-radius: 30px;
+        -webkit-border-radius: 30px;
+        border-radius: 30px;
+        
+        cursor:pointer; 
+      }
+      #back:hover {
+          transform:scale(1.15); 
+          
+      }
+      #sc{
+        position: absolute;
+        top: 250px;
+        left: 5px;
+        height:60px;
+        width:270px;
+        text-align:center;
+        font-size:40px;
+        -webkit-transition:0.3s;
+        transition:0.3s;
+        color:rgb(255, 0, 0);
+        background-color:lightyellow;
+        border-color: rgb(255, 0, 0);
+
+        -moz-border-radius: 30px;
+        -webkit-border-radius: 30px;
+        border-radius: 30px;
+        
+        cursor:pointer;
+      }
+      #sc:hover{
+        transform:scale(1.15);
+      }
+      textarea{
+          resize:none;
+          display: block;
+          justify-content: center;
+          margin-left:auto;
+          margin-right:auto;
+      }
+
+      /*VOTAZIONE*/
+      .Stars{
+        position: absolute;
+        display: flex;
+        justify-content: center;
+      }
+      .Stars li{
+        margin-left: 5px;
+        margin-right: 5px;
+      }
+      .stars {
+        height: 134px;
+        width: 126px;
+        list-style-type: none;
+      }
+
+    </style>
+
+    <script type="text/javascript" language="javascript" > 
+
+      var ws = new WebSocket("ws://localhost:3000/ws");
+      ws.onmessage = function (event) {
+        obj = JSON.parse(event.data);
+        switch (obj.type) {
+            case 'utils':
+              switch (obj.value) {
+                case 'menu':
+                  window.open('http://localhost:8000/webpagepepper.html','_self');
+                  break;
+                case 'change ingredient':
+                  window.open('http://localhost:8000/ingredient.html','_self');
+                  break;
+                case 'back':
+                  receipeChoice()
+                  break;
+              }
+              break;
+            case 'ingredient':
+              /*ws.close(1000);*/
+              document.getElementById("ingredient").value = obj.value;
+              receipeChoice();
+              break;
+            case 'recipe':
+              visualizeReceipe(obj.value);
+              break;
+            case 'vote':
+              if (obj.value == "") {
+                resetTextArea()
+              }
+              else {
+                star_vota(parseInt(obj.value))
+              }
+              break;
+            case 'stop cooking':
+              window.open('http://localhost:8000/screensaver.html','_self');
+              break;
+        }
+      };
+
+      nRecipes = new Array(0);
+      currentIngr = "";
+
+      ingredients = []
+      dicIngr = {}
+      dicGrad = {}
+      dicRecipes = {}
+
+      Promise.all([fetch(String("IngrRecipes") + '.txt')
+          .then(x => x.text())])
+          .then( ([sampleResp]) => {
+              avaiableIng = sampleResp.replaceAll("\r","");
+              avaiableIng = avaiableIng.replaceAll("\n","").split("%");
+              for (i=0; i<avaiableIng.length-1; i++) {
+                  data = avaiableIng[i].split("$");
+                  ingr = data[0];
+                  recipes = data[1].split("/");
+                  list = new Array(0)
+                  for(j=0; j<recipes.length;j++) {
+                      data1 = recipes[j].split("@");
+                      n_v = data1[0].split(" ");
+                      list.push(n_v[0]);
+                      dicGrad[n_v[0]] = n_v[1];
+                      dicRecipes[n_v[0]] = data1[1];
+                  }   
+                  dicIngr[ingr] = list;
+              }
+              ingredients = Object.keys(dicIngr);
+          } );
+
+      function on(id) {
+        for(i=1; i<=id; i++)
+          document.getElementById('star_'+String(i)+'_img').src = "./star-on.png";
+      }
+
+      function off(id) {
+        for(i=1; i<=id; i++)
+          document.getElementById('star_'+String(i)+'_img').src = "./star-off.png";
+      }
+
+      function star_vota(QT) {
+        var star_output = '<p>You voted ' + QT + ' stars! </p>';
+        document.getElementById('STAR_RATING').innerHTML = star_output;
+        dicGrad[nRecipes[0]] = QT;
+      }
+
+      function star(){
+        sd = ('<div id="STAR_RATING" class="Stars" >');
+        s1 = '<li class="stars" id="star_1" onclick="sendToPepper(1)" onmouseover="on(1)" onmouseout="off(1)"><img id="star_1_img" src="./star-off.png"/></li>';
+        s2 = '<li class="stars" id="star_2" onclick="sendToPepper(2)" onmouseover="on(2)" onmouseout="off(2)"><img id="star_2_img" src="./star-off.png"/></li>';
+        s3 = '<li class="stars" id="star_3" onclick="sendToPepper(3)" onmouseover="on(3)" onmouseout="off(3)"><img id="star_3_img" src="./star-off.png"/></li>';
+        s4 = '<li class="stars" id="star_4" onclick="sendToPepper(4)" onmouseover="on(4)" onmouseout="off(4)"><img id="star_4_img" src="./star-off.png"/></li>';
+        s5 = '<li class="stars" id="star_5" onclick="sendToPepper(5)" onmouseover="on(5)" onmouseout="off(5)"><img id="star_5_img" src="./star-off.png"/></li>';
+        ed = '</div>';
+        div = document.createElement("div")
+        div.id = "review"
+        div.style.width = "400px";
+        div.style.height = "100px";
+        div.style.top = "600px";
+        div.style.left = "650px";
+        div.style.position = "absolute";
+        div.innerHTML = sd+s1+s2+s3+s4+s5+ed;
+        document.getElementById('container').appendChild(div);
+      }
+
+      function reset(){
+
+        idlen=nRecipes.length;
+        review = document.getElementById("review");
+        indexArea = document.getElementById(nRecipes[0]+"textarea");
+        bottonBack = document.getElementById("back");
+        
+        if(review!=null){ review.remove(); }
+        if(indexArea!=null){ indexArea.remove(); }
+        if(bottonBack!=null){ bottonBack.remove(); }
+
+        for(i=0; i<idlen; i++){
+          indexNode = document.getElementById(nRecipes[0]+"node");
+          indexNode.remove();
+          nRecipes.shift();
+        }
+      }
+
+      function resetTextArea(){
+        indexArea = document.getElementById(nRecipes[0]+"textarea");
+        back = document.getElementById('back');
+        menu = document.getElementById('Bmenu');
+        change = document.getElementById('ok');
+        if(indexArea!=null){ indexArea.remove(); }
+        if(back!=null){ back.remove(); }
+        if(menu!=null){ menu.remove(); }
+        if(change!=null){ change.remove(); }
+        star()
+      }
+      
+      function visualizeReceipe(name){
+
+        reset();
+
+        var backBtn = document.createElement("button");
+        backBtn.id = "back";
+        backBtn.innerText = "Back";
+        backBtn.addEventListener('click', function() { sendToPepper('back'); } );        
+
+        var node = document.createElement("LI");
+        var par = document.createElement("P");
+        var imgReceipe = document.createElement("textarea");
+        
+        imgReceipe.style.position = "absolute";
+        imgReceipe.style.top = "600px";
+        imgReceipe.style.left = "550px";
+        imgReceipe.style.width = "800px";
+        imgReceipe.style.height = "300px";
+        imgReceipe.readOnly = true;
+        par.innerText = String(name);
+        node.id = String(name)+"node";
+        imgReceipe.id = String(name) + "textarea";
+        var img = document.createElement("img");
+        img.src =  String(name) + ".jpg";
+        img.id = String(name);
+        img.style.width = "300px";
+        img.style.height = "200px";
+        nRecipes.push(img.id);
+        imgReceipe.innerText = dicRecipes[nRecipes[0]]
+        node.appendChild(par);
+        node.appendChild(img);
+        document.getElementById("container").appendChild(imgReceipe);
+        document.getElementById("grid").appendChild(backBtn);
+        document.getElementById("grid").appendChild(node);
+      }
+
+      function receipeChoice(){
+
+        if (document.getElementById("back")!=null){ v=currentIngr; }
+        else{ v=document.getElementById("ingredient").value.toLowerCase(); }
+
+        reset();
+
+        if(v==""){
+          //alert('Insert ingredient')
+          return false;
+        }
+        else if(ingredients.includes(v)){
+
+          var search = document.getElementById('ok');
+          search.style.width = "380px";
+          search.innerText = 'Change Ingredient';
+          search.onclick = function() { sendToPepper('change ingredient'); };          
+
+          currentIngr=v;
+          l1=dicIngr[v].length;
+          rec = new Array(l1);
+
+          for (i=0; i<l1; i++){
+            rec[i]=[dicIngr[v][i], dicGrad[dicIngr[v][i]] ];
+          }
+
+          rec.sort(function(first, second) {
+            return second[1] - first[1];
+          });
+
+          for (i=0; i<l1; i++){
+
+            var node = document.createElement("LI");
+            var par = document.createElement("P");
+            par.innerText = String(rec[i][0]) + ": " + String(rec[i][1]);
+            node.id = String(rec[i][0])+"node";
+            var img = document.createElement("img");
+            img.src =  String(rec[i][0]) + ".jpg";
+            img.id = String(rec[i][0]);
+            img.style.width = "300px";
+            img.style.height = "200px";
+            const p = {
+              s: img.id,
+              fnct: function() {
+                ws.send('{ "type": "'+String(this.s)+'" , "value": "" }');
+              }
+            };
+            img.addEventListener('click', p.fnct.bind(p));
+            nRecipes.push(img.id);
+            node.appendChild(par);
+            node.appendChild(img);
+            document.getElementById("grid").appendChild(node);
+          }
+        }
+        else{
+          //alert("The ingredient is not present");
+          return false;
+        }
+      }
+
+      function findIngr() {
+          ing = document.getElementById('ingredient').value.toLowerCase();
+          sendToPepper(ing)
+      }
+
+      function sendToPepper(s) {
+          ws.send('{ "type": "'+String(s)+'" , "value": "" }')
+        }
+      
+    </script>
+  </head>
+  <body>
+  
+  <div style="position: absolute; height: 200px; width: 1500px;"> 
+    
+    <button id="Bmenu" onclick="sendToPepper('menu')"> Menu </button>
+    <p style="position: absolute; left: 340px; top: 100px; color: red; margin: auto;">Ingredient:</p>
+    <input id="ingredient" type="text" name="ingredient"> 
+    <button id="ok" onclick="findIngr()"> Search </button>
+    <button id="sc" onclick="sendToPepper('stop cooking')"> Stop Cooking </button>
+  </div>
+
+  <div id="container" class="justified">
+    <ul id="grid">
+    </ul>
+  </div>
+    
+  </body>
+</html>
